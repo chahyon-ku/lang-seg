@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 
-from data import get_dataset, get_available_datasets
+from lang_seg.data import get_dataset, get_available_datasets
 
 from encoding.models import get_segmentation_model
 from encoding.nn import SegmentationLosses
@@ -208,13 +208,14 @@ class LSegmentationModule(pl.LightningModule):
             **kwargs
         )
 
-        self.num_classes = dset.num_class
-        self.train_accuracy = pl.metrics.Accuracy()
+        # self.num_classes = dset.num_class
+        self.num_classes = 10
+        # self.train_accuracy = pl.metrics.Accuracy()
 
         return dset
 
     def get_valset(self, dset, augment=False, **kwargs):
-        self.val_accuracy = pl.metrics.Accuracy()
+        # self.val_accuracy = pl.metrics.Accuracy()
         self.val_iou = SegmentationMetric(self.num_classes)
 
         if augment == True:

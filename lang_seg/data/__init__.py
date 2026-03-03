@@ -15,6 +15,7 @@ encoding_datasets = {
 
 
 def get_dataset(name, **kwargs):
+    return None
     if name in encoding_datasets:
         return encoding_datasets[name.lower()](**kwargs)
     assert False, f"dataset {name} not found"

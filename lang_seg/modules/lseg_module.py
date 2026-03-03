@@ -71,7 +71,7 @@ class LSegModule(LSegmentationModule):
         )
         # print(kwargs)
 
-        labels = self.get_labels('ade20k')
+        labels = []#self.get_labels('ade20k')
 
         self.net = LSegNet(
             labels=labels,

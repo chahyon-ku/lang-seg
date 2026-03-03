@@ -30,7 +30,7 @@ import matplotlib.colors as mplc
 import matplotlib.figure as mplfigure
 import matplotlib.patches as mpatches
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-from data import get_dataset
+from lang_seg.data import get_dataset
 from additional_utils.encoding_models import MultiEvalModule as LSeg_MultiEvalModule
 import torchvision.transforms as transforms
 

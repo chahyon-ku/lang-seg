@@ -41,7 +41,7 @@ import matplotlib.colors as mplc
 import matplotlib.figure as mplfigure
 import matplotlib.patches as mpatches
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-from data import get_dataset
+from lang_seg.data import get_dataset
 import torchvision.transforms as transforms
 
 
