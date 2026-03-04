@@ -1,6 +1,8 @@
 import math
 import types
+from typing import List
 
+from matplotlib import pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -157,13 +159,20 @@ class LSeg(BaseModel):
 
         self.text = clip.tokenize(self.labels)    
         
-    def forward(self, x, labelset=''):
-        if labelset == '':
-            text = self.text
-        else:
-            text = clip.tokenize(labelset)    
-        
-        if self.channels_last == True:
+    def forward(self, x, labelset):
+        image_features = self.forward_image(x)
+        text_features = self.forward_text(labelset)
+        scores = self.forward_score(image_features, text_features)
+        return scores
+
+    def forward_text(self, labels: List[str]):
+        text = clip.tokenize(labels).to('cuda')
+        text_features = self.clip_pretrained.encode_text(text)
+        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+        return text_features
+
+    def forward_image(self, x: torch.Tensor):
+        if self.channels_last:
             x.contiguous(memory_format=torch.channels_last)
 
         layer_1, layer_2, layer_3, layer_4 = forward_vit(self.pretrained, x)
@@ -178,22 +187,17 @@ class LSeg(BaseModel):
         path_2 = self.scratch.refinenet2(path_3, layer_2_rn)
         path_1 = self.scratch.refinenet1(path_2, layer_1_rn)
 
-        text = text.to(x.device)
-        self.logit_scale = self.logit_scale.to(x.device)
-        text_features = self.clip_pretrained.encode_text(text)
-
         image_features = self.scratch.head1(path_1)
+        image_features = image_features / image_features.norm(dim=1, keepdim=True)
 
-        imshape = image_features.shape
+        return image_features
+    
+    def forward_score(self, image_features: torch.Tensor, text_features: torch.Tensor):
+        num_text, c = text_features.shape
+        b, c, h, w = image_features.shape
         image_features = image_features.permute(0,2,3,1).reshape(-1, self.out_c)
-
-        # normalized features
-        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
-        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
-        
-        logits_per_image = self.logit_scale * image_features.half() @ text_features.t()
-
-        out = logits_per_image.float().view(imshape[0], imshape[2], imshape[3], -1).permute(0,3,1,2)
+        logits_per_image = self.logit_scale.cuda() * image_features.half() @ text_features.t()
+        out = logits_per_image.float().view(b, h, w, num_text).permute(0,3,1,2)  # b num_text h w
 
         if self.arch_option in [1, 2]:
             for _ in range(self.block_depth - 1):
